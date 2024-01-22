@@ -16,7 +16,7 @@ PASSWORD = ''
 CRN = ''
 PIN = ''
 
-KITTA = 10
+KITTA = 30
 
 class Scrap(webdriver.Chrome):
     
@@ -29,7 +29,7 @@ class Scrap(webdriver.Chrome):
         self.service = Service()
         #driver = self(webdriver.Chrome(ChromeDriverManager().install()))
         super(Scrap,self).__init__(options=self.options,service=self.service)
-        self.implicitly_wait(15)
+        self.implicitly_wait(5)
         self.maximize_window()
         self.get(URL)
         
@@ -70,18 +70,34 @@ class Scrap(webdriver.Chrome):
             ipos.append(IPO(name,subGroup,shareType,shareGroup))
         return ipos
 
-    def cleanString(self,str)    :
-        return re.sub('[<!\->\n]',"",str).strip()
+    def cleanString(self,str):
+        return re.sub('(<|>|!|--+)+(?=.*[^<>!-]|$)',"",str).strip()
     
     def openShare(self,ipo,crn,pin):
+        print('Open share FUnction')
+        count_open_share = 0
         listOfIpoDivs = self.find_elements(by=By.CSS_SELECTOR,value='div[class="company-list"]')
         for ipoUnit in listOfIpoDivs:
+            print('inside list')
             name = ipoUnit.find_element(by=By.CSS_SELECTOR,value='span[tooltip="Company Name"]').get_attribute('innerHTML')
-            if ipo.name in name:               
-                applyBtn = ipoUnit.find_element(by=By.CSS_SELECTOR,value='button[class="btn-issue"]')
+            print(name)
+            print(ipo.name)
+            if ipo.name in name:     
+                print(ipo.name)
+                while count_open_share<3:
+                    try:
+                        applyBtn = ipoUnit.find_element(by=By.CSS_SELECTOR,value='button[class="btn-issue"]')                        
+                        break
+                    except:
+                        count_open_share+=1
+                if count_open_share == 3:
+                    print("going next")
+                    return
                 if "Edit" in applyBtn.get_attribute('innerHTML'):
+                    print('Edit Button')
                     return 
                 elif "Apply" in applyBtn.get_attribute('innerHTML'):
+                    print('Clicking Apply')
                     applyBtn.click()
                     self.fillShare(crn,pin)
                     time.sleep(4)
@@ -117,9 +133,9 @@ class Scrap(webdriver.Chrome):
                 logoutBtn = self.find_element(by=By.CSS_SELECTOR,value='a[tooltip="Logout"]')    
                 break
             except:
-                time.sleep(10)
                 print('Error while Logout...')
                 print('Retrying...')
+                time.sleep(10)
                 count_logout += 1
                 continue
         logoutBtn.click()
@@ -160,13 +176,16 @@ for user in users:
             #print('Found')
             #print('Name = ',ipo.name)
             while(count_open_share<50):
+                print(count_open_share)
                 try:
+                    print('opening')
                     bot.openShare(ipo,user.crn,user.pin)
+                    print('Opened')
                     break
-                except:
-                    time.sleep(10)
+                except :
                     print('Error while Opening Share...')
                     print('Retrying...')
+                    time.sleep(10)
                     count_open_share += 1
                     continue
             
